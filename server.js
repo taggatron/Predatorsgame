@@ -223,6 +223,7 @@ io.on('connection', (socket) => {
 // Game loop: collisions, energy, reproduction
 const HEART_EVENTS = []; // { x, y, t }
 const HIT_EVENTS = []; // { x, y, t }
+const RECENT_RABBIT_PAIRS = new Map(); // key -> timestamp of last heart
 
 setInterval(() => {
   const now = Date.now();
@@ -250,12 +251,18 @@ setInterval(() => {
       const a = ps[i], b = ps[j];
       if (distanceSq(a, b) <= COLLIDE_RADIUS * COLLIDE_RADIUS) {
         if (a.species === 'rabbit' && b.species === 'rabbit') {
-          // Rabbit meet: spawn heart and allow one more rabbit into game (increase capacity by 1 temporarily)
-          HEART_EVENTS.push({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, t: now });
-          settings.maxRabbits += 1; // grant an extra slot
-          saveSettings();
-          updateStats({ hearts: 1 });
-          tryAdmitFromLobby();
+          // Rabbit meet: spawn heart with cooldown for the pair and grant an extra slot (bounded)
+          const k = a.id < b.id ? `${a.id}|${b.id}` : `${b.id}|${a.id}`;
+          const last = RECENT_RABBIT_PAIRS.get(k) || 0;
+          if (now - last > 1500) { // 1.5s cooldown per pair
+            RECENT_RABBIT_PAIRS.set(k, now);
+            HEART_EVENTS.push({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, t: now });
+            const curr = Number(settings.maxRabbits) || 0;
+            settings.maxRabbits = Math.min(500, curr + 1); // cap to avoid runaway growth
+            saveSettings();
+            updateStats({ hearts: 1 });
+            tryAdmitFromLobby();
+          }
         } else if (a.species !== b.species) {
           // Fox eats rabbit
           const fox = a.species === 'fox' ? a : b;

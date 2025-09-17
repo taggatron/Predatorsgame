@@ -7,6 +7,7 @@ let world = { width: 2000, height: 1200 };
 let myId = null;
 let players = [];
 let hearts = [];
+let hits = [];
 let settings = {};
 let me = null;
 
@@ -106,6 +107,12 @@ socket.on('adminLoginResult', ({ ok }) => {
     document.getElementById('adminTopBtn')?.classList.add('hidden');
     document.getElementById('adminBadge')?.classList.remove('hidden');
     document.getElementById('analytics')?.classList.remove('hidden');
+    // Make badge reopen admin modal
+    document.getElementById('adminBadge')?.addEventListener('click', openAdmin, { once: false });
+    // Close admin modal and show the lobby (waiting) panel
+    const lobbyEl = document.getElementById('lobby');
+    hideAdmin();
+    lobbyEl?.classList.remove('hidden');
     socket.emit('setAdminFlag', { ok: true });
   } else {
     adminMsg.textContent = 'Invalid credentials';
@@ -170,7 +177,8 @@ socket.on('tick', ({ state, hearts: h, hits: hi }) => {
   hits = hi || [];
   // Update counts UI
   if (state.counts) {
-    countsEl.textContent = `Foxes: ${state.counts.foxes}/${state.settings.maxFoxes} | Rabbits: ${state.counts.rabbits}/${state.settings.maxRabbits} | Queue: ${state.queue || 0}`;
+    const countsElNow = document.getElementById('counts');
+    if (countsElNow) countsElNow.textContent = `Foxes: ${state.counts.foxes}/${state.settings.maxFoxes} | Rabbits: ${state.counts.rabbits}/${state.settings.maxRabbits} | Queue: ${state.queue || 0}`;
     pushPopSample(state.counts.foxes, state.counts.rabbits);
   }
 });
@@ -464,9 +472,7 @@ setInterval(() => {
 }, 500);
 
 // Client-side state for hit events, sound toggle, and preload simple sounds.
-let hits = [];
 let playSound = true;
-const countsEl = document.getElementById('counts');
 const soundToggle = document.getElementById('soundToggle');
 soundToggle?.addEventListener('click', () => {
   playSound = !playSound;
@@ -482,8 +488,14 @@ let lastHeartsLen = 0;
 let lastHitsLen = 0;
 setInterval(() => {
   if (playSound) {
-    if (hearts.length > lastHeartsLen) try { sndHeart.currentTime = 0; sndHeart.play(); } catch {}
-    if (hits.length > lastHitsLen) try { sndEat.currentTime = 0; sndEat.play(); } catch {}
+    if (hearts.length > lastHeartsLen) {
+      try { sndHeart.currentTime = 0; } catch {}
+      try { sndHeart.play().catch(() => {}); } catch {}
+    }
+    if (hits.length > lastHitsLen) {
+      try { sndEat.currentTime = 0; } catch {}
+      try { sndEat.play().catch(() => {}); } catch {}
+    }
   }
   lastHeartsLen = hearts.length;
   lastHitsLen = hits.length;
