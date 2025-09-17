@@ -2,12 +2,13 @@ html, body {
   margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden;
   font-family: -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
 }
-canvas#game { position: fixed; inset: 0; background: #6fbf73; }
+canvas#game { position: fixed; inset: 0; background: #6fbf73; z-index: 0; }
 
 .panel {
   position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
   background: rgba(255,255,255,0.92); padding: 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
   width: 320px; max-width: calc(100% - 32px);
+  z-index: 3;
 }
 .field { margin: 10px 0; display: flex; gap: 8px; align-items: center; }
 .field label { width: 110px; color: #333; font-weight: 600; }
@@ -18,17 +19,32 @@ button:hover { filter: brightness(1.05); }
 .msg { margin-top: 10px; color: #555; min-height: 1em; }
 .hidden { display: none; }
 
-.modal { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,0.4); }
-.modal .modal-content { background: #fff; padding: 20px; border-radius: 12px; width: 360px; max-width: calc(100% - 32px); }
+.modal { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,0.4); z-index: 4; }
+.modal .modal-content { position: relative; background: #fff; padding: 20px; border-radius: 12px; width: 360px; max-width: calc(100% - 32px); }
+.modal .modal-content .closeX { position: absolute; top: 8px; right: 10px; background: transparent; color: #333; border: none; font-size: 22px; line-height: 1; cursor: pointer; }
 
-#hud { position: fixed; left: 10px; top: 10px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+/* Ensure hidden always wins, even against .modal's display rule */
+.modal.hidden, .panel.hidden, .hidden { display: none !important; }
+
+#hud { position: fixed; left: 10px; top: 10px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; z-index: 2; pointer-events: none; }
+#hud * { pointer-events: auto; }
 .energy { width: 180px; height: 12px; border: 2px solid #333; border-radius: 8px; background: #eee; overflow: hidden; }
 .energy .bar { height: 100%; width: 100%; background: linear-gradient(90deg,#ef5350,#ffca28,#66bb6a); }
 .status { color: #fff; text-shadow: 0 2px 3px rgba(0,0,0,0.4); font-weight: 600; }
 .counts { color: #fff; text-shadow: 0 2px 3px rgba(0,0,0,0.4); font-weight: 600; }
 .sound { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.6); border-radius: 8px; padding: 6px 10px; }
 
-.joystick { position: fixed; left: 16px; bottom: 16px; width: 120px; height: 120px; background: rgba(0,0,0,0.15); border-radius: 50%; display: grid; place-items: center; opacity: 0.6; }
+.joystick { position: fixed; left: 16px; bottom: 16px; width: 120px; height: 120px; background: rgba(0,0,0,0.15); border-radius: 50%; display: grid; place-items: center; opacity: 0.6; z-index: 2; }
 .joystick .stick { width: 40px; height: 40px; background: rgba(255,255,255,0.9); border-radius: 50%; transition: transform 0.05s linear; }
 
 .hit-flash { position: absolute; width: 16px; height: 16px; background: rgba(255,0,0,0.8); border-radius: 50%; pointer-events: none; }
+
+.admin-top-btn {
+  position: fixed; top: 10px; right: 10px;
+  z-index: 5;
+  background: rgba(0,0,0,0.4);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.6);
+  border-radius: 8px;
+  padding: 8px 12px;
+}

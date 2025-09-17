@@ -17,6 +17,11 @@ function resize() {
 }
 window.addEventListener('resize', resize);
 resize();
+// Initial visibility: show user join modal by default, keep admin hidden
+try {
+  document.getElementById('lobby')?.classList.remove('hidden');
+  document.getElementById('adminModal')?.classList.add('hidden');
+} catch {}
 
 // Lobby and admin UI
 const lobby = document.getElementById('lobby');
@@ -26,7 +31,10 @@ const energy = document.getElementById('energy');
 const energyBar = energy.querySelector('.bar');
 const statusEl = document.getElementById('status');
 
-document.getElementById('join').addEventListener('click', () => {
+// Lobby form submit
+const lobbyForm = document.getElementById('lobbyForm');
+lobbyForm?.addEventListener('submit', (e) => {
+  e.preventDefault();
   const name = document.getElementById('name').value || 'Player';
   const species = document.getElementById('species').value;
   socket.emit('joinLobby', { name, species });
@@ -34,14 +42,47 @@ document.getElementById('join').addEventListener('click', () => {
 
 // Admin modal
 const adminModal = document.getElementById('adminModal');
-document.getElementById('adminBtn').addEventListener('click', () => {
-  adminModal.classList.remove('hidden');
+const lobbyModal = document.getElementById('lobby');
+const splash = document.getElementById('splash');
+
+// Admin modal open/close
+const adminBtn = document.getElementById('adminBtn');
+const adminTopBtn = document.getElementById('adminTopBtn');
+const openAdmin = () => adminModal.classList.remove('hidden');
+adminBtn?.addEventListener('click', openAdmin);
+adminTopBtn?.addEventListener('click', openAdmin);
+// Splash entry points
+document.getElementById('openLobbyBtn')?.addEventListener('click', () => {
+  splash?.classList.add('hidden');
+  lobbyModal?.classList.remove('hidden');
 });
-document.getElementById('closeAdmin').addEventListener('click', () => {
-  adminModal.classList.add('hidden');
+document.getElementById('openAdminBtn')?.addEventListener('click', () => {
+  splash?.classList.add('hidden');
+  adminModal?.classList.remove('hidden');
+});
+// Ensure default visibility: lobby shown, admin hidden
+if (lobbyModal) lobbyModal.classList.remove('hidden');
+if (adminModal) adminModal.classList.add('hidden');
+const closeAdminBtn = document.getElementById('closeAdmin');
+const closeAdminX = document.getElementById('adminCloseX');
+const hideAdmin = () => adminModal.classList.add('hidden');
+closeAdminBtn?.addEventListener('click', hideAdmin);
+closeAdminX?.addEventListener('click', hideAdmin);
+// Click outside to close admin modal
+adminModal?.addEventListener('click', (e) => {
+  if (e.target === adminModal) hideAdmin();
 });
 
-document.getElementById('adminLogin').addEventListener('click', () => {
+// Lobby close to splash
+document.getElementById('lobbyCloseX')?.addEventListener('click', () => {
+  lobbyModal?.classList.add('hidden');
+  splash?.classList.remove('hidden');
+});
+
+// Admin form submit
+const adminForm = document.getElementById('adminForm');
+adminForm?.addEventListener('submit', (e) => {
+  e.preventDefault();
   const user = document.getElementById('adminUser').value;
   const pass = document.getElementById('adminPass').value;
   socket.emit('adminLogin', { user, pass });
@@ -56,12 +97,15 @@ document.getElementById('saveSettings').addEventListener('click', () => {
 
 socket.on('adminLoginResult', ({ ok }) => {
   const adminMsg = document.getElementById('adminMsg');
+  const adminSettings = document.getElementById('adminSettings');
   if (ok) {
     adminMsg.textContent = 'Logged in as admin';
     socket.dataIsAdmin = true;
+    adminSettings?.classList.remove('hidden');
     socket.emit('setAdminFlag', { ok: true });
   } else {
     adminMsg.textContent = 'Invalid credentials';
+    adminSettings?.classList.add('hidden');
   }
 });
 
@@ -96,8 +140,10 @@ socket.on('eaten', () => {
 
 socket.on('settings', (s) => {
   settings = s;
-  document.getElementById('maxFoxes').value = s.maxFoxes;
-  document.getElementById('maxRabbits').value = s.maxRabbits;
+  const mf = document.getElementById('maxFoxes');
+  const mr = document.getElementById('maxRabbits');
+  if (mf) mf.value = s.maxFoxes;
+  if (mr) mr.value = s.maxRabbits;
 });
 
 socket.on('state', (s) => {

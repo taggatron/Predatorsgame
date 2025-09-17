@@ -7,33 +7,57 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <div id="lobby" class="panel">
-      <h1>Predators & Prey</h1>
-      <div class="field"><label>Name</label><input id="name" maxlength="16" placeholder="Your name" /></div>
-      <div class="field">
-        <label>Species</label>
-        <select id="species">
-          <option value="rabbit">Rabbit</option>
-          <option value="fox">Fox</option>
-        </select>
+    <button id="adminTopBtn" class="admin-top-btn" type="button" aria-label="Open admin">Admin</button>
+    <div id="lobby" class="modal">
+      <div class="modal-content">
+        <button id="lobbyCloseX" class="closeX" type="button" aria-label="Close">×</button>
+        <h2>Join game</h2>
+        <form id="lobbyForm" autocomplete="on">
+          <div class="field"><label for="name">Name</label><input id="name" name="name" maxlength="16" placeholder="Your name" required /></div>
+          <div class="field">
+            <label for="species">Species</label>
+            <select id="species" name="species">
+              <option value="rabbit">Rabbit</option>
+              <option value="fox">Fox</option>
+            </select>
+          </div>
+          <div class="field" style="justify-content: space-between; gap: 8px;">
+            <button id="join" type="submit">Join</button>
+            <button id="adminBtn" type="button" class="link">Admin</button>
+          </div>
+          <div id="lobbyMsg" class="msg"></div>
+        </form>
       </div>
-      <button id="join">Join</button>
-      <button id="adminBtn" class="link">Admin</button>
-      <div id="lobbyMsg" class="msg"></div>
+    </div>
+
+    <div id="splash" class="panel hidden">
+      <h1>Predators & Prey</h1>
+      <p>Welcome! Choose an option to begin.</p>
+      <div class="field" style="justify-content:flex-start; gap: 8px;">
+        <button id="openLobbyBtn" type="button">Play</button>
+        <button id="openAdminBtn" type="button" class="link">Admin</button>
+      </div>
     </div>
 
     <div id="adminModal" class="modal hidden">
       <div class="modal-content">
+        <button id="adminCloseX" class="closeX" type="button" aria-label="Close">×</button>
         <h2>Admin login</h2>
-        <div class="field"><label>User</label><input id="adminUser" value="dan" /></div>
-        <div class="field"><label>Password</label><input id="adminPass" type="password" value="tagg" /></div>
-        <button id="adminLogin">Login</button>
-        <div class="field"><label>Max Foxes</label><input id="maxFoxes" type="number" value="5" /></div>
-        <div class="field"><label>Max Rabbits</label><input id="maxRabbits" type="number" value="20" /></div>
-        <button id="saveSettings">Save Settings</button>
-        <button id="closeAdmin">Close</button>
-        <div id="adminMsg" class="msg"></div>
-        <div id="adminStats" class="msg"></div>
+        <form id="adminForm" autocomplete="on">
+          <div class="field"><label for="adminUser">User</label><input id="adminUser" name="username" placeholder="Username" autocomplete="username" /></div>
+          <div class="field"><label for="adminPass">Password</label><input id="adminPass" name="password" type="password" placeholder="Password" autocomplete="current-password" /></div>
+          <div class="field" style="justify-content: flex-start; gap: 8px;">
+            <button id="adminLogin" type="submit">Login</button>
+            <button id="closeAdmin" type="button">Close</button>
+          </div>
+        </form>
+        <div id="adminSettings" class="hidden">
+          <div class="field"><label for="maxFoxes">Max Foxes</label><input id="maxFoxes" type="number" /></div>
+          <div class="field"><label for="maxRabbits">Max Rabbits</label><input id="maxRabbits" type="number" /></div>
+          <button id="saveSettings">Save Settings</button>
+          <div id="adminStats" class="msg"></div>
+        </div>
+        <div id="adminMsg" class="msg">Please log in</div>
       </div>
     </div>
 
