@@ -104,13 +104,24 @@ socket.on('state', (s) => {
   players = s.players;
   settings = s.settings;
   world = s.world;
+  // Show stats in admin if available
+  const adminStats = document.getElementById('adminStats');
+  if (adminStats && s.stats) {
+    const st = s.stats;
+    adminStats.textContent = `Stats — Hearts: ${st.hearts} | Rabbits eaten: ${st.rabbitsEaten} | Fox births: ${st.foxBirths}`;
+  }
 });
 
-socket.on('tick', ({ state, hearts: h }) => {
+socket.on('tick', ({ state, hearts: h, hits: hi }) => {
   players = state.players;
   settings = state.settings;
   world = state.world;
   hearts = h || [];
+  hits = hi || [];
+  // Update counts UI
+  if (state.counts) {
+    countsEl.textContent = `Foxes: ${state.counts.foxes}/${state.settings.maxFoxes} | Rabbits: ${state.counts.rabbits}/${state.settings.maxRabbits} | Queue: ${state.queue || 0}`;
+  }
 });
 
 // Input handling: keyboard + mobile joystick
@@ -227,6 +238,24 @@ function drawFoxSprite(x, y, walkingPhase = 0) {
   ctx.restore();
 }
 
+// Facing direction (flip sprites based on vx)
+function drawRabbitSpriteFacing(x, y, vx, phase) {
+  ctx.save();
+  const flip = vx < -0.01 ? -1 : 1;
+  ctx.translate(x, y);
+  ctx.scale(flip, 1);
+  drawRabbitSprite(0, 0, phase);
+  ctx.restore();
+}
+function drawFoxSpriteFacing(x, y, vx, phase) {
+  ctx.save();
+  const flip = vx < -0.01 ? -1 : 1;
+  ctx.translate(x, y);
+  ctx.scale(flip, 1);
+  drawFoxSprite(0, 0, phase);
+  ctx.restore();
+}
+
 // Assets: simple inline SVG draw for fox and rabbit
 function drawRabbit(x, y, scale = 1, walkingPhase = 0) {
   ctx.save();
@@ -299,6 +328,20 @@ function drawHearts() {
   }
 }
 
+// Draw hits
+function drawHits() {
+  for (const h of hits) {
+    const p = worldToScreen(h.x, h.y);
+    ctx.save();
+    ctx.globalAlpha = 0.8;
+    ctx.fillStyle = 'rgba(255,0,0,0.6)';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
 // Render loop
 let last = performance.now();
 let walkPhase = 0;
@@ -323,8 +366,8 @@ function loop(now) {
     const scr = worldToScreen(p.x, p.y);
     // Prefer image sprites if available
     if (imgFox && imgRabbit) {
-      if (p.species === 'rabbit') drawRabbitSprite(scr.x, scr.y, walkPhase);
-      else drawFoxSprite(scr.x, scr.y, walkPhase);
+      if (p.species === 'rabbit') drawRabbitSpriteFacing(scr.x, scr.y, p.vx || 0, walkPhase);
+      else drawFoxSpriteFacing(scr.x, scr.y, p.vx || 0, walkPhase);
     } else {
       const scale = Math.min(scr.scaleX, scr.scaleY) * 2.5; // fallback shape scale
       if (p.species === 'rabbit') drawRabbit(scr.x, scr.y, scale, walkPhase);
@@ -339,6 +382,8 @@ function loop(now) {
 
   // Hearts
   drawHearts();
+  // Hits
+  drawHits();
 
   // Energy HUD
   if (me && me.species === 'fox') {
@@ -366,3 +411,29 @@ setInterval(() => {
   const cand = players.find(p => p.name === nameInput.value && p.species === speciesInput.value);
   if (cand && cand.inGame) myId = cand.id;
 }, 500);
+
+// Client-side state for hit events, sound toggle, and preload simple sounds.
+let hits = [];
+let playSound = true;
+const countsEl = document.getElementById('counts');
+const soundToggle = document.getElementById('soundToggle');
+soundToggle?.addEventListener('click', () => {
+  playSound = !playSound;
+  soundToggle.textContent = playSound ? '🔊' : '🔇';
+});
+
+// Simple sounds
+const sndEat = new Audio('/eat.mp3');
+const sndHeart = new Audio('/heart.mp3');
+
+// Play sounds when events change
+let lastHeartsLen = 0;
+let lastHitsLen = 0;
+setInterval(() => {
+  if (playSound) {
+    if (hearts.length > lastHeartsLen) try { sndHeart.currentTime = 0; sndHeart.play(); } catch {}
+    if (hits.length > lastHitsLen) try { sndEat.currentTime = 0; sndEat.play(); } catch {}
+  }
+  lastHeartsLen = hearts.length;
+  lastHitsLen = hits.length;
+}, 150);

@@ -21,10 +21,14 @@ button:hover { filter: brightness(1.05); }
 .modal { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,0.4); }
 .modal .modal-content { background: #fff; padding: 20px; border-radius: 12px; width: 360px; max-width: calc(100% - 32px); }
 
-#hud { position: fixed; left: 10px; top: 10px; display: flex; gap: 12px; align-items: center; }
+#hud { position: fixed; left: 10px; top: 10px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .energy { width: 180px; height: 12px; border: 2px solid #333; border-radius: 8px; background: #eee; overflow: hidden; }
 .energy .bar { height: 100%; width: 100%; background: linear-gradient(90deg,#ef5350,#ffca28,#66bb6a); }
 .status { color: #fff; text-shadow: 0 2px 3px rgba(0,0,0,0.4); font-weight: 600; }
+.counts { color: #fff; text-shadow: 0 2px 3px rgba(0,0,0,0.4); font-weight: 600; }
+.sound { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.6); border-radius: 8px; padding: 6px 10px; }
 
 .joystick { position: fixed; left: 16px; bottom: 16px; width: 120px; height: 120px; background: rgba(0,0,0,0.15); border-radius: 50%; display: grid; place-items: center; opacity: 0.6; }
 .joystick .stick { width: 40px; height: 40px; background: rgba(255,255,255,0.9); border-radius: 50%; transition: transform 0.05s linear; }
+
+.hit-flash { position: absolute; width: 16px; height: 16px; background: rgba(255,0,0,0.8); border-radius: 50%; pointer-events: none; }

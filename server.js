@@ -1,6 +1,15 @@
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const DATA_DIR = path.join(__dirname, 'data');
+const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
+const STATS_FILE = path.join(DATA_DIR, 'stats.json');
 
 const app = express();
 const server = http.createServer(app);
@@ -22,10 +31,43 @@ const COLLIDE_RADIUS = 32; // px approx for hit tests
 
 // Admin settings
 const admin = { user: 'dan', pass: 'tagg' };
-const settings = {
+let settings = {
   maxFoxes: 5,
   maxRabbits: 20
 };
+let stats = { hearts: 0, rabbitsEaten: 0, foxBirths: 0 };
+
+function ensureDataFiles() {
+  try { if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR); } catch {}
+  if (!fs.existsSync(SETTINGS_FILE)) {
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+  } else {
+    try {
+      const loaded = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
+      if (typeof loaded.maxFoxes === 'number') settings.maxFoxes = loaded.maxFoxes;
+      if (typeof loaded.maxRabbits === 'number') settings.maxRabbits = loaded.maxRabbits;
+    } catch {}
+  }
+  if (!fs.existsSync(STATS_FILE)) {
+    fs.writeFileSync(STATS_FILE, JSON.stringify(stats, null, 2));
+  } else {
+    try { stats = JSON.parse(fs.readFileSync(STATS_FILE, 'utf8')); } catch {}
+  }
+}
+
+function saveSettings() {
+  try { fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2)); } catch {}
+}
+
+function updateStats(patch) {
+  for (const [k, v] of Object.entries(patch)) {
+    stats[k] = (stats[k] || 0) + v;
+  }
+  try { fs.writeFileSync(STATS_FILE, JSON.stringify(stats, null, 2)); } catch {}
+  return stats;
+}
+
+ensureDataFiles();
 
 // Lobby and game state
 const players = new Map(); // socketId -> player
@@ -116,9 +158,10 @@ function distanceSq(a, b) {
 function snapshot() {
   const arr = [];
   for (const p of players.values()) {
-    arr.push({ id: p.id, name: p.name, species: p.species, x: p.x, y: p.y, alive: p.alive, inGame: p.inGame, speedMul: p.speedMul, energyMs: p.species === 'fox' ? p.energyMs : undefined });
+    arr.push({ id: p.id, name: p.name, species: p.species, x: p.x, y: p.y, vx: p.vx, vy: p.vy, alive: p.alive, inGame: p.inGame, speedMul: p.speedMul, energyMs: p.species === 'fox' ? p.energyMs : undefined });
   }
-  return { players: arr, settings, world: WORLD };
+  const counts = countSpecies();
+  return { players: arr, settings, world: WORLD, counts, queue: lobbyQueue.size, stats };
 }
 
 io.on('connection', (socket) => {
@@ -145,6 +188,7 @@ io.on('connection', (socket) => {
     const mr = Math.max(0, Math.min(200, Number(maxRabbits)));
     if (Number.isFinite(mf)) settings.maxFoxes = mf;
     if (Number.isFinite(mr)) settings.maxRabbits = mr;
+    saveSettings();
     tryAdmitFromLobby();
     io.emit('settings', settings);
   });
@@ -178,6 +222,7 @@ io.on('connection', (socket) => {
 
 // Game loop: collisions, energy, reproduction
 const HEART_EVENTS = []; // { x, y, t }
+const HIT_EVENTS = []; // { x, y, t }
 
 setInterval(() => {
   const now = Date.now();
@@ -208,6 +253,8 @@ setInterval(() => {
           // Rabbit meet: spawn heart and allow one more rabbit into game (increase capacity by 1 temporarily)
           HEART_EVENTS.push({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, t: now });
           settings.maxRabbits += 1; // grant an extra slot
+          saveSettings();
+          updateStats({ hearts: 1 });
           tryAdmitFromLobby();
         } else if (a.species !== b.species) {
           // Fox eats rabbit
@@ -224,11 +271,15 @@ setInterval(() => {
           fox.eatenCount = (fox.eatenCount || 0) + 1;
           fox.speedMul = FOX_SPEED_BONUS;
           setTimeout(() => { const f = players.get(fox.id); if (f) f.speedMul = 1; }, 5000);
+          updateStats({ rabbitsEaten: 1 });
+          HIT_EVENTS.push({ x: rabbit.x, y: rabbit.y, t: now });
 
           // Fox reproduction after 2 rabbits: grant new fox slot once
           if (fox.eatenCount >= 2 && !fox.hasReproduced) {
             fox.hasReproduced = true;
             settings.maxFoxes += 1;
+            saveSettings();
+            updateStats({ foxBirths: 1 });
             tryAdmitFromLobby();
           }
         }
@@ -238,8 +289,10 @@ setInterval(() => {
 
   // Clean up old heart events (>1.5s)
   while (HEART_EVENTS.length && now - HEART_EVENTS[0].t > 1500) HEART_EVENTS.shift();
+  // Clean up old hit events (>700ms)
+  while (HIT_EVENTS.length && now - HIT_EVENTS[0].t > 700) HIT_EVENTS.shift();
 
-  io.emit('tick', { state: snapshot(), hearts: HEART_EVENTS });
+  io.emit('tick', { state: snapshot(), hearts: HEART_EVENTS, hits: HIT_EVENTS });
 }, 100);
 
 server.listen(PORT, () => {
