@@ -1,0 +1,30 @@
+html, body {
+  margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden;
+  font-family: -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+}
+canvas#game { position: fixed; inset: 0; background: #6fbf73; }
+
+.panel {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: rgba(255,255,255,0.92); padding: 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  width: 320px; max-width: calc(100% - 32px);
+}
+.field { margin: 10px 0; display: flex; gap: 8px; align-items: center; }
+.field label { width: 110px; color: #333; font-weight: 600; }
+input, select { flex: 1; padding: 8px 10px; border-radius: 8px; border: 1px solid #ccc; }
+button { padding: 10px 14px; border: none; background: #1976d2; color: white; border-radius: 8px; cursor: pointer; }
+button.link { background: transparent; color: #1976d2; text-decoration: underline; }
+button:hover { filter: brightness(1.05); }
+.msg { margin-top: 10px; color: #555; min-height: 1em; }
+.hidden { display: none; }
+
+.modal { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,0.4); }
+.modal .modal-content { background: #fff; padding: 20px; border-radius: 12px; width: 360px; max-width: calc(100% - 32px); }
+
+#hud { position: fixed; left: 10px; top: 10px; display: flex; gap: 12px; align-items: center; }
+.energy { width: 180px; height: 12px; border: 2px solid #333; border-radius: 8px; background: #eee; overflow: hidden; }
+.energy .bar { height: 100%; width: 100%; background: linear-gradient(90deg,#ef5350,#ffca28,#66bb6a); }
+.status { color: #fff; text-shadow: 0 2px 3px rgba(0,0,0,0.4); font-weight: 600; }
+
+.joystick { position: fixed; left: 16px; bottom: 16px; width: 120px; height: 120px; background: rgba(0,0,0,0.15); border-radius: 50%; display: grid; place-items: center; opacity: 0.6; }
+.joystick .stick { width: 40px; height: 40px; background: rgba(255,255,255,0.9); border-radius: 50%; transition: transform 0.05s linear; }

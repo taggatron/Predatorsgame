@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>Predators & Prey</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div id="lobby" class="panel">
+      <h1>Predators & Prey</h1>
+      <div class="field"><label>Name</label><input id="name" maxlength="16" placeholder="Your name" /></div>
+      <div class="field">
+        <label>Species</label>
+        <select id="species">
+          <option value="rabbit">Rabbit</option>
+          <option value="fox">Fox</option>
+        </select>
+      </div>
+      <button id="join">Join</button>
+      <button id="adminBtn" class="link">Admin</button>
+      <div id="lobbyMsg" class="msg"></div>
+    </div>
+
+    <div id="adminModal" class="modal hidden">
+      <div class="modal-content">
+        <h2>Admin login</h2>
+        <div class="field"><label>User</label><input id="adminUser" value="dan" /></div>
+        <div class="field"><label>Password</label><input id="adminPass" type="password" value="tagg" /></div>
+        <button id="adminLogin">Login</button>
+        <div class="field"><label>Max Foxes</label><input id="maxFoxes" type="number" value="5" /></div>
+        <div class="field"><label>Max Rabbits</label><input id="maxRabbits" type="number" value="20" /></div>
+        <button id="saveSettings">Save Settings</button>
+        <button id="closeAdmin">Close</button>
+        <div id="adminMsg" class="msg"></div>
+      </div>
+    </div>
+
+    <div id="hud" class="hidden">
+      <div id="energy" class="energy hidden"><div class="bar"></div></div>
+      <div id="status" class="status"></div>
+    </div>
+
+    <canvas id="game"></canvas>
+
+    <div id="joystick" class="joystick">
+      <div class="stick"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="module" src="/main.js"></script>
+  </body>
+  </html>
