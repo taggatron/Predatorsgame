@@ -65,10 +65,16 @@
       <div id="energy" class="energy hidden"><div class="bar"></div></div>
       <div id="status" class="status"></div>
       <div id="counts" class="counts"></div>
+      <div id="adminBadge" class="badge hidden">Admin: logged in</div>
       <button id="soundToggle" class="sound">🔊</button>
     </div>
 
     <canvas id="game"></canvas>
+
+    <aside id="analytics" class="analytics hidden">
+      <div class="analytics-header">Population over time</div>
+      <canvas id="popChart" width="340" height="220"></canvas>
+    </aside>
 
     <div id="joystick" class="joystick">
       <div class="stick"></div>

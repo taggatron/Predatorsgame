@@ -102,6 +102,10 @@ socket.on('adminLoginResult', ({ ok }) => {
     adminMsg.textContent = 'Logged in as admin';
     socket.dataIsAdmin = true;
     adminSettings?.classList.remove('hidden');
+    // Hide top admin button, show admin badge and analytics
+    document.getElementById('adminTopBtn')?.classList.add('hidden');
+    document.getElementById('adminBadge')?.classList.remove('hidden');
+    document.getElementById('analytics')?.classList.remove('hidden');
     socket.emit('setAdminFlag', { ok: true });
   } else {
     adminMsg.textContent = 'Invalid credentials';
@@ -167,6 +171,7 @@ socket.on('tick', ({ state, hearts: h, hits: hi }) => {
   // Update counts UI
   if (state.counts) {
     countsEl.textContent = `Foxes: ${state.counts.foxes}/${state.settings.maxFoxes} | Rabbits: ${state.counts.rabbits}/${state.settings.maxRabbits} | Queue: ${state.queue || 0}`;
+    pushPopSample(state.counts.foxes, state.counts.rabbits);
   }
 });
 
@@ -483,3 +488,60 @@ setInterval(() => {
   lastHeartsLen = hearts.length;
   lastHitsLen = hits.length;
 }, 150);
+
+// --- Simple population graph ---
+const chartCanvas = document.getElementById('popChart');
+const chartCtx = chartCanvas ? chartCanvas.getContext('2d') : null;
+const popHistory = []; // {t, foxes, rabbits}
+const MAX_SAMPLES = 300; // ~30s if sampling at 100ms
+let lastSampleAt = 0;
+
+function pushPopSample(foxes, rabbits) {
+  const now = performance.now();
+  // throttle to ~5 fps
+  if (now - lastSampleAt < 200) return;
+  lastSampleAt = now;
+  popHistory.push({ t: now, foxes, rabbits });
+  if (popHistory.length > MAX_SAMPLES) popHistory.shift();
+  drawChart();
+}
+
+function drawChart() {
+  if (!chartCtx || !chartCanvas) return;
+  const w = chartCanvas.width, h = chartCanvas.height;
+  chartCtx.clearRect(0, 0, w, h);
+  if (popHistory.length < 2) return;
+  const t0 = popHistory[0].t;
+  const t1 = popHistory[popHistory.length - 1].t;
+  const span = Math.max(1, t1 - t0);
+  const maxVal = Math.max(1, ...popHistory.map(p => Math.max(p.foxes, p.rabbits)));
+
+  // axes
+  chartCtx.strokeStyle = 'rgba(0,0,0,0.3)';
+  chartCtx.lineWidth = 1;
+  chartCtx.beginPath();
+  chartCtx.moveTo(30, 10); chartCtx.lineTo(30, h - 20); chartCtx.lineTo(w - 10, h - 20);
+  chartCtx.stroke();
+
+  function plot(color, key) {
+    chartCtx.strokeStyle = color;
+    chartCtx.lineWidth = 2;
+    chartCtx.beginPath();
+    popHistory.forEach((p, i) => {
+      const x = 30 + ((p.t - t0) / span) * (w - 40);
+      const y = (h - 20) - (p[key] / maxVal) * (h - 40);
+      if (i === 0) chartCtx.moveTo(x, y); else chartCtx.lineTo(x, y);
+    });
+    chartCtx.stroke();
+  }
+
+  plot('#1976d2', 'foxes'); // blue line
+  plot('#43a047', 'rabbits'); // green line
+
+  // legend
+  chartCtx.fillStyle = '#222'; chartCtx.font = '12px sans-serif';
+  chartCtx.fillText('Foxes', 34, 16);
+  chartCtx.fillText('Rabbits', 90, 16);
+  chartCtx.fillStyle = '#1976d2'; chartCtx.fillRect(5, 8, 20, 4);
+  chartCtx.fillStyle = '#43a047'; chartCtx.fillRect(65, 8, 20, 4);
+}
